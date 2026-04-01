@@ -107,7 +107,7 @@ module.exports = grammar(CSHARP, {
     _razor_marker: (_) => token("@"),
 
     razor_escape: ($) =>
-      seq(alias(/@{2}/, "at_at_escape"), alias($._html_text, $.element)),
+      seq(alias(/@{2}/, "at_at_escape"), alias($.html_text, $.element)),
 
     razor_page_directive: ($) =>
       seq(alias(seq($._razor_marker, "page"), "at_page"), $.string_literal),
@@ -316,10 +316,12 @@ module.exports = grammar(CSHARP, {
       ),
 
     _blended_content: ($) =>
-      repeat1(
-        prec(
-          10,
-          choice($._node, $.explicit_line_transition, $.statement, $.comment),
+      prec.left(
+        repeat1(
+          prec(
+            10,
+            choice($._node, $.explicit_line_transition, $.statement, $.comment),
+          ),
         ),
       ),
 
@@ -380,8 +382,8 @@ module.exports = grammar(CSHARP, {
     explicit_line_transition: ($) =>
       prec.left(seq(alias("@:", "at_colon_transition"), repeat1(/[^\n\r]+/))),
 
-    razor_comment: ($) => seq("@*", optional($._razor_comment_text), "*@"),
-    _razor_comment_text: (_) => repeat1(/.|\n|\r/),
+    razor_comment: ($) => seq("@*", optional($.razor_comment_text), "*@"),
+    razor_comment_text: (_) => repeat1(/.|\n|\r/),
     razor_attribute_name: ($) =>
       seq(
         $._razor_marker,
@@ -401,33 +403,33 @@ module.exports = grammar(CSHARP, {
     razor_attribute_modifier: (_) =>
       choice(":culture", ":preventDefault", ":stopPropagation"),
 
-    html_comment: ($) => seq("<!--", optional($._razor_comment_text), "-->"),
-    _html_comment_text: (_) => repeat1(/.|\n|\r/),
+    html_comment: ($) => seq("<!--", optional($.razor_comment_text), "-->"),
 
     // HTML Base Definitions
-    _tag_name: (_) => /[a-zA-Z0-9-:]+/,
-    _end_tag: ($) => seq("</", $._tag_name, ">"),
-    _html_attribute_name: (_) => /[a-zA-Z0-9-:]+/,
-    _boolean_html_attribute: (_) => /[a-zA-Z0-9-:]+/,
-    _html_attribute_value: ($) =>
+    tag_name: (_) => /[a-zA-Z0-9-:]+/,
+    end_tag: ($) => seq("</", $.tag_name, ">"),
+    html_attribute_name: (_) => /[a-zA-Z0-9-:]+/,
+    boolean_html_attribute: (_) => /[a-zA-Z0-9-:]+/,
+    html_attribute_value: ($) =>
       seq(
         '"',
         optional(
           choice(
             $.razor_explicit_expression,
             $.razor_implicit_expression,
-            prec.left(/[a-zA-Z0-9-:/\.=>(){}\s]+/),
+            prec.left(/[a-zA-Z0-9-:/\.=>(){}\s#_;%?&,+']+/),
           ),
         ),
         '"',
       ),
-    _html_text: (_) => /[^<>&@.(\s]([^<>&@]*[^<>&@\s])?/,
+    html_entity: (_) => /&([a-zA-Z]+|#[0-9]+|#x[0-9a-fA-F]+);/,
+    html_text: (_) => /[^<>&@.(\s]([^<>&@]*[^<>&@\s])?/,
 
     razor_attribute_value: ($) =>
       seq('"', optional($.modifier), $.expression, '"'),
 
-    _html_attribute: ($) =>
-      seq($._html_attribute_name, "=", $._html_attribute_value),
+    html_attribute: ($) =>
+      seq($.html_attribute_name, "=", $.html_attribute_value),
 
     razor_html_attribute: ($) =>
       seq($.razor_attribute_name, optional(seq("=", $.razor_attribute_value))),
@@ -435,14 +437,14 @@ module.exports = grammar(CSHARP, {
     element: ($) =>
       seq(
         "<",
-        $._tag_name,
+        $.tag_name,
         optional(
           repeat(
             prec.left(
               seq(
                 choice(
-                  $._html_attribute,
-                  $._boolean_html_attribute,
+                  $.html_attribute,
+                  $.boolean_html_attribute,
                   $.razor_html_attribute,
                 ),
                 optional(" "),
@@ -452,7 +454,11 @@ module.exports = grammar(CSHARP, {
         ),
         choice(
           "/>",
-          seq(">", repeat(choice($._node, $._html_text)), $._end_tag),
+          seq(
+            ">",
+            repeat(choice($._node, $.html_entity, $.html_text)),
+            $.end_tag,
+          ),
         ),
       ),
   },

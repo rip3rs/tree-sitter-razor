@@ -10,7 +10,8 @@ Comments
 ---
 
 (compilation_unit
-  (razor_comment)
+  (razor_comment
+    (razor_comment_text))
   (razor_block
     (comment)))
 
@@ -40,7 +41,8 @@ Comment with @
 ---
 
 (compilation_unit
-  (razor_comment)
+  (razor_comment
+    (razor_comment_text))
   (razor_block
     (comment)))
 
@@ -55,7 +57,8 @@ over multiple lines *@
 ----
 
 (compilation_unit
-  (razor_comment)
+  (razor_comment
+    (razor_comment_text))
   (razor_block
     (comment)))
 
@@ -77,8 +80,9 @@ Commented Code Block
 
 (compilation_unit
   (razor_comment
-    (comment)
-    (comment))
+    (razor_comment_text
+      (comment)
+      (comment)))
   (razor_block
     (comment)))
 
@@ -93,4 +97,9 @@ IMPORTANT
 
 (compilation_unit
   (element
-    (html_comment)))
+    (tag_name)
+    (html_comment
+      (razor_comment_text))
+    (html_text)
+    (end_tag
+      (tag_name))))
